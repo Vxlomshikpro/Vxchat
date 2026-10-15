@@ -14,6 +14,16 @@
 
 ---
 
+## Релизы
+
+Готовые сборки — на странице релизов:
+https://github.com/Vxlomshikpro/Vxchat/releases
+
+Текущая версия — `v1.0.0-b12`. В каждом релизе два файла: сам мод и
+`-sources.jar` с исходниками.
+
+---
+
 ## Установка
 
 1. Установи [Fabric Loader](https://fabricmc.net/use/installer) для 1.21.11.
