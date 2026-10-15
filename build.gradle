@@ -1,0 +1,106 @@
+plugins {
+    id 'fabric-loom' version "${loom_version}"
+    id 'maven-publish'
+}
+
+// Авто-версия: mod_version из gradle.properties + инкремент сборки + московское время.
+// Номер сборки хранится в build.properties и растёт только после УСПЕШНОГО build.
+def buildNumberFile = file('build.properties')
+def storedProps = new Properties()
+if (buildNumberFile.exists()) {
+    storedProps.load(new FileInputStream(buildNumberFile))
+}
+def buildNumber = (storedProps.getProperty('build_number', '0') as Integer) + 1
+def buildStamp = new Date().format('yyyyMMdd.HHmm', TimeZone.getTimeZone('Europe/Moscow'))
+
+version = "${project.mod_version}-b${buildNumber}.${buildStamp}"
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    maven { url 'https://maven.fabricmc.net/' }
+    maven { url 'https://maven.terraformersmc.com/releases' }
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // Mod Menu — опциональная зависимость, только для кнопки «Настроить»
+    modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+// Номер сборки фиксируем только после полностью успешного build.
+tasks.named('build') {
+    doLast {
+        buildNumberFile.text = "build_number=${buildNumber}\n"
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+    withSourcesJar()
+}
+
+def modInstances = {
+    def root = new File('/mnt/ElyPrismLauncher/instances')
+    if (!root.isDirectory()) {
+        return []
+    }
+    root.listFiles()
+            .findAll { it.isDirectory() && new File(it, 'minecraft/mods').isDirectory() }
+            .findAll { inst ->
+                def mods = new File(inst, 'minecraft/mods')
+                def hasJar = (mods.listFiles() ?: []).any {
+                    it.name ==~ /(?i)^vxchat-.*\.jar$/ && !it.name.endsWith('-sources.jar')
+                }
+                hasJar || new File(inst, 'minecraft/config/vxchat.json').isFile()
+            }
+            .collect { new File(it, 'minecraft/mods') }
+            .sort { it.parentFile.name }
+}()
+
+tasks.register('deployMods') {
+    group = 'vxchat'
+    description = 'Копирует свежий JAR в инстанции ElyPrism и удаляет оттуда старые сборки VXChat'
+    dependsOn tasks.named('build')
+    doLast {
+        def jarFile = tasks.named('remapJar').get().archiveFile.get().asFile
+        logger.lifecycle("сборка: ${jarFile.name}")
+        modInstances.each { modsDir ->
+            if (!modsDir.isDirectory()) {
+                logger.lifecycle("ПРОПУСК ${modsDir}: нет папки mods")
+                return
+            }
+            modsDir.listFiles().findAll { f ->
+                f.name ==~ /(?i)^vxchat-.*\.jar$/ && !f.name.endsWith('-sources.jar')
+            }.each { old ->
+                if (old.name != jarFile.name) {
+                    logger.lifecycle("  удаляю старую: ${old.name}")
+                    old.delete()
+                }
+            }
+            def target = new File(modsDir, jarFile.name)
+            target.bytes = jarFile.bytes
+            logger.lifecycle("  скопировано: ${target}")
+        }
+    }
+}

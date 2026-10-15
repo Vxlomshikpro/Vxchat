@@ -1,0 +1,28 @@
+# Gradle
+.gradle/
+build/
+out/
+
+# Папка запущенной игры: конфиги и логи, не нужны в репозитории
+run/
+run-data/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+bin/
+
+# Системное
+.DS_Store
+Thumbs.db
+*~
+
+# Логи и временное
+*.log
+*.tmp

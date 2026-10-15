@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "vxchat",
+  "version": "${version}",
+  "name": "VXChat",
+  "description": "Приватный чат: исходящие сообщения уходят в иероглифы, игроки с тем же модом и успешным хендшейком видят обычный текст. Пароль по сети не передаётся — только HMAC-токен.",
+  "authors": ["vxlomshikpro"],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/vxchat/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["ru.vxlomshikpro.vxchat.VxChatClient"],
+    "modmenu": ["ru.vxlomshikpro.vxchat.VxChatModMenu"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "modmenu": "*"
+  }
+}
